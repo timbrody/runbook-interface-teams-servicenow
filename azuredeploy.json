@@ -68,7 +68,6 @@
         },
         "powerShellUri": {
             "type": "string",
-            "defaultValue": "",
             "metadata": {
                 "description": "description"
             }

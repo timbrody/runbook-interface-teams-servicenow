@@ -19,6 +19,9 @@
         },
         "serviceNowInstanceName": {
             "value": ""
+        },
+        "powerShellUri": {
+            "value": ""
         }
     }
 }
