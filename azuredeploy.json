@@ -1,0 +1,185 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "automationAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "serviceNowInstanceName": {
+            "type": "string",
+            "metadata": {
+                "description": "ServiceNow instance name to connect to."
+            }
+        },
+        "serviceNowUserName": {
+            "type": "string",
+            "metadata": {
+                "description": "ServiceNow user name."
+            }
+        },
+        "serviceNowPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "ServiceNow password."
+            }
+        },
+        "teamsUserName": {
+            "type": "string",
+            "metadata": {
+                "description": "Teams user name."
+            }
+        },
+        "teamsPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Teams password."
+            }
+        },
+        "runbookName": {
+            "type": "string",
+            "defaultValue": "TeamsTelephonyDataToServiceNow",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "jobSchedulesName": {
+            "type": "string",
+            "defaultValue": "[newGuid()]",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "scheduleName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('runbookName'), 'Schedule')]",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "scheduleStartTime": {
+            "type": "string",
+            "defaultValue": "[dateTimeAdd(utcNow('yyyy-MM-ddTHH:mm:ss zzzz'), 'PT1H')]",
+            "metadata": {
+                "description": "description"
+            }
+        },
+        "powerShellUri": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "description"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[concat(parameters('automationAccountName'), '/ServiceNow')]",
+            "type": "Microsoft.Automation/automationAccounts/credentials",
+            "apiVersion": "2019-06-01",
+            "dependsOn": [
+            ],
+            "properties": {
+                "userName": "[parameters('serviceNowUserName')]",
+                "password": "[parameters('serviceNowPassword')]",
+                "description": "Credential to connect to ServiceNow, requires import_set_loader and import_transfer roles."
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/Teams')]",
+            "type": "Microsoft.Automation/automationAccounts/credentials",
+            "apiVersion": "2019-06-01",
+            "dependsOn": [
+            ],
+            "properties": {
+                "userName": "[parameters('teamsUserName')]",
+                "password": "[parameters('teamsPassword')]",
+                "description": "Credential to connect to Teams API, requires Teams admin role."
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/MicrosoftTeams')]",
+            "type": "Microsoft.Automation/automationAccounts/modules",
+            "apiVersion": "2019-06-01",
+            "dependsOn": [
+            ],
+            "properties": {
+                "contentLink": {
+                    "uri": "[concat('https://www.powershellgallery.com/api/v2/package/', '/MicrosoftTeams')]"
+                }
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/ServiceNowInstanceName')]",
+            "type": "Microsoft.Automation/automationAccounts/variables",
+            "apiVersion": "2019-06-01",
+            "dependsOn": [
+            ],
+            "properties": {
+                "value": "[concat('\"', parameters('serviceNowInstanceName'), '\"')]",
+                "description": "ServiceNow instance name to connect to.",
+                "isEncryptede": false
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/', parameters('runbookName'))]",
+            "type": "Microsoft.Automation/automationAccounts/runbooks",
+            "apiVersion": "2019-06-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+            ],
+            "properties": {
+                "logVerbose": false,
+                "logProgress": false,
+                "logActivityTrace": 0,
+                "runbookType": "PowerShell",
+                "publishContentLink": {
+                    "uri": "[parameters('powerShellUri')]",
+                    "version": "1.0.0.0"
+                },
+                "description": "Use the Teams API to extract telephony data and import it into the ServiceNow CMDB."
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/', parameters('scheduleName'))]",
+            "type": "Microsoft.Automation/automationAccounts/schedules",
+            "apiVersion": "2019-06-01",
+            "tags": {},
+            "dependsOn": [
+            ],
+            "properties": {
+                "description": "Send Teams telephony data to ServiceNow every hour.",
+                "startTime": "[parameters('scheduleStartTime')]",
+                "expiryTime": "9999-12-31T23:59:00+00:00",
+                "isEnabled": true,
+                "interval": 1,
+                "frequency": "Hour"
+            }
+        },
+        {
+            "name": "[concat(parameters('automationAccountName'), '/', parameters('jobSchedulesName'))]",
+            "type": "Microsoft.Automation/automationAccounts/jobSchedules",
+            "apiVersion": "2019-06-01",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "dependsOn": [
+                "[resourceId('Microsoft.Automation/automationAccounts/schedules', parameters('automationAccountName'), parameters('scheduleName'))]",
+                "[resourceId('Microsoft.Automation/automationAccounts/runbooks', parameters('automationAccountName'), parameters('runbookName'))]"
+            ],
+            "properties": {
+                "schedule": {
+                    "name": "[parameters('scheduleName')]"
+                },
+                "runbook": {
+                    "name": "[parameters('runbookName')]"
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}

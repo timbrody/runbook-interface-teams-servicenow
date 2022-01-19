@@ -1,0 +1,29 @@
+# local template parameters
+azuredeploy.parameters.local.json
+azuredeploy.parameters.dev.json
+azuredeploy.parameters.?.json
+prereq.azuredeploy.parameters.?.json
+prereq.azuredeploy.parameters.dev.json
+
+# secrets
+**/*.pfx
+**/*.cer
+
+# Visual Studio autosaves
+.vs
+
+# emacs autosaves
+auto-save-list
+custom.el
+url/
+.org-id-locations
+\#*
+org-mode-config.el
+*~
+.#*
+\#*\#
+*.log
+.DS_Store
+org-clock-save.el
+emacs-config.el
+.vscode
