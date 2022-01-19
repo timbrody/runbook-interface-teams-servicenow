@@ -1,3 +1,8 @@
+### RunBook to retrieve MS Teams telephony configuration and transfer it
+### to ServiceNow's CMDB
+
+### Parameters
+
 $serviceNowInstance = Get-AutomationVariable -Name "ServiceNowInstanceName"
 $teamsCred = Get-AutomationPSCredential -Name "Teams"
 $serviceNowCred = Get-AutomationPSCredential -Name "ServiceNow"
