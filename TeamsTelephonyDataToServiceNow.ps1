@@ -32,21 +32,19 @@ $queuesOut = @()
 foreach ($queue in $queues) {
     #Write-Output $queue.Identity
 
-    # create a lookup table for each agent (more efficient than querying each agent)
-    $filter = ($queue.Agents | ForEach-Object { $_.ObjectId } | ForEach-Object { "ObjectId -eq '$_'"}) -join ' -or '
-    if ($filter -ne "") {
-        $agentLookup = Get-CsOnlineUser -Filter $filter | Select-Object -Property ObjectId, UserPrincipalName
+    $agentsChunk = @()
+    $agents = @()
+    
+    # loop through agents at upto 15 at a time and find their upn
+    foreach ($agent in $queue.Agents) {
+        $agentsChunk += $agent.ObjectId
+        if (($agentsChunk.Length -eq 15) -or ($agent -eq $queue.Agents[-1])) {
+            $filter = ($agentsChunk | ForEach-Object { "ObjectId -eq '$_'" }) -join ' -or '
+            Get-CsOnlineUser -Filter $filter | Select-Object -Property UserPrincipalName | ForEach-Object { $agents += $_.UserPrincipalName }
+            $agentsChunk = @()
+        }
     }
-    else {
-        $agentLookup = @()
-    }
-
-    # map agent objectids to upn
-    $agents = $queue.Agents | ForEach-Object {
-        $agent = $_
-        ($agentLookup | ?{$_.ObjectId -eq $agent.ObjectId}).UserPrincipalName
-    }
-
+    
     # lookup the upn + phone number for each application instance
     $applications = $queue.ApplicationInstances | ForEach-Object {
         Get-CsOnlineApplicationInstance -Identity $_ | Select-Object -Property UserPrincipalName, PhoneNumber
